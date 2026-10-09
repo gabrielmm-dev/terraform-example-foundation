@@ -51,4 +51,5 @@ module "confidential_space" {
   region                                   = coalesce(var.instance_region, local.default_region)
   remote_state_bucket                      = var.remote_state_bucket
   workload_pool_propagation_sleep_duration = var.workload_pool_propagation_sleep_duration
+  custom_tee_image_reference               = var.custom_tee_image_reference
 }
