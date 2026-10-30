@@ -60,3 +60,15 @@ variable "source_image" {
   type        = string
   default     = ""
 }
+
+variable "custom_tee_image_reference" {
+  description = "Custom TEE container image reference to override the default image derived from cicd_project_id."
+  type        = string
+  default     = ""
+}
+
+variable "confidential_instance_zone" {
+  description = "Zone where the confidential compute instance should be created (e.g. us-central1-b, us-central1-c). If null, defaults to us-central1-b."
+  type        = string
+  default     = null
+}

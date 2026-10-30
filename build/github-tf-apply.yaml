@@ -59,6 +59,7 @@ jobs:
           do
             sed -i'' -e "s/UPDATE_ME/${TF_BACKEND}/" $i
             sed -i'' -e "s/UPDATE_PROJECTS_BACKEND/${TF_BACKEND}/" $i
+            sed -i'' -e "s/UPDATE_APP_INFRA_BUCKET/${TF_BACKEND}/" $i
           done
 
       - id: init
@@ -75,3 +76,23 @@ jobs:
         run: |
           echo "terraform apply"
           ${GITHUB_WORKSPACE}/tf-wrapper.sh apply "${GITHUB_REF_NAME}" "${GITHUB_WORKSPACE}/policy-library" "${PROJECT_ID}" "FILESYSTEM" "GITHUB"
+
+      - id: build-confidential-image
+        name: 'Build and push Confidential Space image if Dockerfile exists'
+        shell: bash
+        run: |
+          for bu_shared in $(find . -maxdepth 3 -name "Dockerfile" -path "*/shared/Dockerfile"); do
+            shared_dir="$(dirname "$bu_shared")"
+            if [ -d "$shared_dir" ]; then
+              echo "Found Dockerfile in $shared_dir. Checking for image_name output..."
+              image_name="$(terraform -chdir="$shared_dir" output -raw image_name 2>/dev/null || echo "")"
+              if [ -n "$image_name" ]; then
+                echo "Configuring Docker auth for Google Artifact Registry..."
+                registry_host="$(echo "$image_name" | cut -d/ -f1)"
+                gcloud auth configure-docker "${registry_host}" --quiet
+                echo "Building and pushing ${image_name}..."
+                docker build -t "${image_name}" "$shared_dir"
+                docker push "${image_name}"
+              fi
+            fi
+          done
