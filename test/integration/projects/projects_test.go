@@ -139,8 +139,13 @@ func TestProjects(t *testing.T) {
 						"peering_project",
 						"shared_vpc_project",
 					}
-					if enableCB {
+					confidentialProjectID := projects.GetStringOutput("confidential_space_project")
+					if enableCB && confidentialProjectID != "" {
 						projectsToVerify = append(projectsToVerify, "confidential_space_project")
+					} else {
+						assert.Empty(confidentialProjectID, "confidential_space_project output should be empty when disabled")
+						assert.Empty(projects.GetStringOutput("confidential_space_project_number"), "confidential_space_project_number output should be empty when disabled")
+						assert.Empty(projects.GetStringOutput("confidential_space_workload_sa"), "confidential_space_workload_sa output should be empty when disabled")
 					}
 
 					for _, projectOutput := range projectsToVerify {
@@ -177,6 +182,9 @@ func TestProjects(t *testing.T) {
 						}
 
 						if projectOutput == "confidential_space_project" {
+
+							sharedVPC := gcloud.Runf(t, "compute shared-vpc get-host-project %s", projectID)
+							assert.Empty(sharedVPC.Map(), "Confidential Space project must not be attached to Shared VPC host")
 
 							enabledAPIS := gcloud.Runf(t, "services list --project %s --impersonate-service-account %s", projectID, terraformSA).Array()
 							listApis := testutils.GetResultFieldStrSlice(enabledAPIS, "config.name")
